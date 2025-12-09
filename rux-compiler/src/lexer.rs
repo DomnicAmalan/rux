@@ -198,6 +198,14 @@ impl<'a> Lexer<'a> {
         };
         
         match ch {
+            // Whitespace and newlines (should be skipped, but handle if we get here)
+            '\n' => {
+                self.line += 1;
+                self.column = 1;
+                Ok(Token::Newline)
+            }
+            ch if ch.is_whitespace() => Ok(Token::Whitespace),
+            
             // Single character tokens
             '(' => Ok(Token::LParen),
             ')' => Ok(Token::RParen),
@@ -335,10 +343,9 @@ impl<'a> Lexer<'a> {
             '\'' => self.char(),
             
             // Numbers
-            '0'..='9' => {
-                self.current -= 1;
-                self.column -= 1;
-                self.number()
+            ch @ '0'..='9' => {
+                // Start number parsing with the digit we already consumed
+                self.number_starting_with(ch)
             }
             
             // Identifiers and keywords
@@ -384,7 +391,7 @@ impl<'a> Lexer<'a> {
     
     fn skip_whitespace(&mut self) {
         while let Some(ch) = self.peek() {
-            if ch.is_whitespace() && ch != '\n' {
+            if ch.is_whitespace() {
                 self.advance();
             } else {
                 break;
@@ -524,10 +531,11 @@ impl<'a> Lexer<'a> {
         Ok(Token::Char(value))
     }
     
-    fn number(&mut self) -> Result<Token> {
+    fn number_starting_with(&mut self, first_digit: char) -> Result<Token> {
         let mut value = String::new();
+        value.push(first_digit);
         
-        // Integer part
+        // Continue with rest of digits
         while let Some(ch) = self.peek() {
             if ch.is_ascii_digit() {
                 value.push(ch);
