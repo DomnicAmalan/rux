@@ -21,9 +21,44 @@ RUX supports multiple compilation targets and endpoint compilers to achieve opti
 - ❌ No CocoaPods (iOS)
 - ❌ No Xcode projects (iOS)
 - ❌ No platform-specific build systems
-- ✅ **100% Rust** - everything built from scratch
+- ❌ **No `rustc` required** - RUX has its own frontend compiler
+- ✅ **LLVM backend** - Uses proven LLVM for code generation (recommended)
+- ✅ **RUX frontend** - Custom compiler frontend for RUX-specific optimizations
 
 **Optional Integration**: RUX can optionally integrate with native UI frameworks (Kotlin/Swift) if developers want platform-specific UI, but this is completely optional and not required.
+
+### Compiler Architecture: Hybrid Approach
+
+**RUX uses a hybrid compiler architecture combining custom frontend with LLVM backend:**
+
+- ✅ **RUX Frontend Compiler**: Built from scratch, handles RUX-specific compilation
+  - Lexer, Parser, Type Checker, Analyzer (RUX built)
+  - RUX-specific optimizer (component inlining, signal optimization, virtual tree optimization)
+  - LLVM IR generator (RUX built)
+- ✅ **LLVM Backend**: Proven, mature code generation
+  - LLVM optimization passes (inlining, loop optimization, vectorization, etc.)
+  - Target code generation (x86, ARM, RISC-V, WASM, etc.)
+  - Binary output generation
+- ❌ **No `rustc` required**: RUX has its own frontend compiler
+- ✅ **LLVM as backend**: Uses LLVM for proven, high-quality code generation
+
+**Why LLVM Backend?**
+- **Proven technology**: Used by Rust, Swift, Clang, Julia
+- **Excellent optimizations**: Decades of optimization research
+- **Broad target support**: All major platforms and architectures
+- **Active maintenance**: Large community and corporate backing
+- **Best of both worlds**: RUX-specific optimizations + LLVM's proven code generation
+
+**What RUX Provides:**
+- Complete compiler frontend (parsing, type checking, RUX-specific optimizations)
+- LLVM IR generation from RUX AST
+- RUX-specific LLVM passes (optional, for domain-specific optimizations)
+
+**What LLVM Provides:**
+- Proven optimization passes
+- Target code generation for all platforms
+- Binary output generation
+- Link-time optimization (LTO)
 
 ## 1. Compilation Target Overview
 
@@ -213,60 +248,131 @@ For web deployment, compile the same Rust codebase to WASM:
 
 **Optional Integration**: RUX can optionally integrate with native UI frameworks (Kotlin/Swift) if developers want platform-specific UI, but this is **completely optional** and not required.
 
-## 4. Compiler Backend Architecture
+## 4. Compiler Backend Architecture: Hybrid LLVM Approach
 
-### 4.1 Single Frontend, Multiple Backends
+### 4.1 Hybrid Architecture: RUX Frontend + LLVM Backend
 
 ```
 .rsx source files
   ↓
-[RUX Compiler Frontend]
-  ├─ Lexer
-  ├─ Parser
-  ├─ Type Checker
-  └─ Analyzer
+[RUX Frontend Compiler - Built from scratch]
+  ├─ Lexer (RUX built)
+  ├─ Parser (RUX built)
+  ├─ Type Checker (RUX built)
+  └─ Analyzer (RUX built)
   ↓
-[Rust Code Generator]
+[RUX Optimizer - RUX-specific optimizations]
+  ├─ Component inlining
+  ├─ Signal optimization
+  ├─ Virtual tree optimization
+  └─ UI-specific optimizations
   ↓
-[Rust Compiler (rustc)]
+[RUX LLVM IR Generator - Built from scratch]
+  ↓
+[LLVM Backend]
+  ├─ LLVM optimization passes
+  ├─ Target code generation
+  └─ Binary output
+  ↓
+Multiple targets:
   ├─ Native binary (desktop/mobile)
   ├─ WASM module (web)
   └─ Static library (platform interop)
 ```
 
+**Compiler Strategy**: Hybrid approach combining custom RUX frontend with proven LLVM backend:
+- **RUX Frontend Compiler**: Parses `.rsx` files and applies RUX-specific optimizations (built from scratch)
+- **LLVM Backend**: Proven code generation with excellent optimization quality
+- **Best of Both Worlds**: RUX-specific optimizations + LLVM's battle-tested code generation
+- **Broad Target Support**: LLVM provides support for all major platforms and architectures
+
 ### 4.2 Code Generation Strategy
 
-The RUX compiler generates Rust code, which is then compiled to different targets:
+The RUX compiler generates LLVM IR (Intermediate Representation) from the optimized RUX AST:
 
 ```rust
-// Generated Rust code (same for all targets)
-#[component]
-fn MyComponent(props: Props) -> Element {
-    // Component logic
+// RUX AST (after RUX-specific optimizations)
+struct Component {
+    name: String,
+    props: Vec<Prop>,
+    body: Expr,
 }
 
-// Platform-specific code via cfg attributes
-#[cfg(target_arch = "wasm32")]
-fn platform_specific() {
-    // Web-specific implementation
+// Generated LLVM IR
+fn generate_llvm_ir(component: &Component) -> llvm::Module {
+    let module = llvm::Module::new("rux_module");
+    let func = module.add_function(
+        &component.name,
+        llvm::FunctionType::new(/* ... */)
+    );
+    // Generate function body in LLVM IR
+    // ...
+    module
 }
 
-#[cfg(target_os = "android")]
-fn platform_specific() {
-    // Android-specific implementation
-}
+// LLVM then compiles IR to target-specific code
+// Platform-specific optimizations handled by LLVM
 ```
 
-### 4.3 Platform Abstraction Layer
+### 4.3 Why LLVM Backend?
+
+**Advantages of Using LLVM:**
+1. **Proven Technology**: Used by Rust, Swift, Clang, Julia - battle-tested across millions of codebases
+2. **Excellent Optimizations**: Decades of optimization research (inlining, loop optimization, vectorization, etc.)
+3. **Broad Target Support**: x86, ARM, RISC-V, WASM, MIPS, PowerPC, and more
+4. **Active Maintenance**: Large community and corporate backing, regular updates
+5. **Link-Time Optimization**: Cross-module optimization for better performance
+
+**RUX-Specific Benefits:**
+- Focus engineering effort on RUX-specific optimizations (component inlining, signal optimization)
+- Leverage LLVM's proven low-level optimizations
+- Faster development with excellent results
+- Reduce risk by using proven technology
+
+### 4.4 Dependency Strategy
+
+**Clear Separation of Concerns:**
+
+**RUX Frontend (Built from Scratch - No Dependencies):**
+- Lexer, parser, type checker, analyzer
+- RUX-specific optimizer
+- LLVM IR generator
+- **No external dependencies** - completely self-contained
+
+**LLVM Backend (External Dependency):**
+- LLVM library for code generation
+- LLVM optimization passes
+- Target code generation
+- **Why LLVM?** Proven, mature, excellent optimization quality
+
+**Dependency Structure:**
+```
+RUX Compiler
+├─ Frontend (RUX built, no dependencies)
+├─ Optimizer (RUX built, no dependencies)
+├─ IR Generator (RUX built, no dependencies)
+└─ LLVM Backend (LLVM dependency)
+    ├─ Optimization passes
+    ├─ Code generation
+    └─ Binary output
+```
+
+**Benefits of This Approach:**
+- RUX frontend remains independent and focused on RUX-specific features
+- LLVM backend provides proven, high-quality code generation
+- Clear separation allows independent development and optimization
+- Can swap LLVM backend if needed (though not recommended)
+
+### 4.5 Platform Abstraction Layer
 
 Unified API across all platforms with platform-specific implementations:
 
-- **`rux-core`**: Core runtime, algorithms, data structures
-- **`rux-web`**: WASM + DOM/WebGL/WebGPU bindings
-- **`rux-desktop`**: WGPU + winit for desktop platforms
-- **`rux-android`**: Native library + JNI bindings
-- **`rux-ios`**: Static library + FFI bindings
-- **`rux-embedded`**: Low-memory, no-std implementation
+- **`rux-core`**: Core runtime, algorithms, data structures (RUX built)
+- **`rux-web`**: WASM + DOM/WebGL/WebGPU bindings (RUX built, uses LLVM for WASM)
+- **`rux-desktop`**: Native rendering and windowing (RUX built, uses LLVM for native code)
+- **`rux-android`**: Native library (RUX built, uses LLVM for Android targets)
+- **`rux-ios`**: Static library (RUX built, uses LLVM for iOS targets)
+- **`rux-embedded`**: Low-memory, no-std implementation (RUX built, uses LLVM for embedded targets)
 
 ## 5. WASM Compilation Strategy
 
@@ -851,7 +957,268 @@ jobs:
 | Ecosystem | Large | Growing |
 | Use Case | SSR, tooling | Web apps |
 
-## 11. Conclusion: Fastest + Universal Support
+## 11. LLVM Backend Integration
+
+### 11.1 LLVM IR Generation
+
+The RUX compiler generates LLVM IR from the optimized RUX AST:
+
+```rust
+struct LLVMIRGenerator {
+    context: llvm::Context,
+    module: llvm::Module,
+    builder: llvm::IRBuilder,
+}
+
+impl LLVMIRGenerator {
+    fn generate(&mut self, ast: &OptimizedAST) -> Result<llvm::Module> {
+        // Generate LLVM IR from RUX AST
+        self.visit_ast(ast);
+        Ok(self.module.clone())
+    }
+    
+    fn generate_component(&mut self, component: &Component) {
+        // Generate LLVM function for component
+        let func_type = self.create_function_type(component);
+        let func = self.module.add_function(&component.name, func_type);
+        
+        // Create basic blocks
+        let entry_block = func.append_basic_block("entry");
+        self.builder.position_at_end(entry_block);
+        
+        // Generate component body
+        self.generate_expr(&component.body);
+        
+        // Return element
+        self.builder.build_ret(/* element value */);
+    }
+    
+    fn generate_expr(&mut self, expr: &Expr) -> llvm::Value {
+        match expr {
+            Expr::JSXElement(elem) => self.generate_jsx_element(elem),
+            Expr::Call(call) => self.generate_call(call),
+            // ... other expressions
+        }
+    }
+}
+```
+
+### 11.2 LLVM Optimization Pipeline
+
+LLVM applies proven optimization passes to the generated IR:
+
+```rust
+fn optimize_with_llvm(module: &mut llvm::Module, opt_level: OptLevel) -> Result<()> {
+    let pass_manager = llvm::PassManager::new();
+    
+    // Standard optimization passes
+    pass_manager.add_instruction_combining_pass();
+    pass_manager.add_reassociate_pass();
+    pass_manager.add_gvn_pass();  // Global Value Numbering
+    pass_manager.add_cfg_simplification_pass();
+    pass_manager.add_dead_store_elimination_pass();
+    
+    // Loop optimizations
+    pass_manager.add_loop_unroll_pass();
+    pass_manager.add_loop_vectorize_pass();
+    pass_manager.add_licm_pass();  // Loop Invariant Code Motion
+    
+    // Advanced optimizations
+    pass_manager.add_slp_vectorize_pass();  // Superword-Level Parallelism
+    pass_manager.add_aggressive_dce_pass();  // Dead Code Elimination
+    pass_manager.add_constant_propagation_pass();
+    
+    // Target-specific optimizations
+    if opt_level >= OptLevel::Aggressive {
+        pass_manager.add_memcpy_optimize_pass();
+        pass_manager.add_merge_functions_pass();
+    }
+    
+    // Run optimizations
+    pass_manager.run(module);
+    
+    Ok(())
+}
+```
+
+### 11.3 Target Code Generation
+
+LLVM generates target-specific code for all supported platforms:
+
+```rust
+fn generate_target_code(
+    module: &llvm::Module,
+    target_triple: &str,
+    opt_level: OptLevel,
+) -> Result<Vec<u8>> {
+    // Initialize target
+    llvm::initialize_all_targets();
+    llvm::initialize_all_target_infos();
+    llvm::initialize_all_target_mcs();
+    
+    // Get target
+    let target = llvm::Target::by_triple(target_triple)?;
+    let target_machine = target.create_target_machine(
+        target_triple,
+        "",  // CPU features
+        "",  // Features
+        opt_level,
+        llvm::RelocModel::Default,
+        llvm::CodeModel::Default,
+    )?;
+    
+    // Generate object code
+    let object_file = target_machine.emit_to_memory_buffer(
+        module,
+        llvm::FileType::Object,
+    )?;
+    
+    Ok(object_file.as_slice().to_vec())
+}
+```
+
+**Supported Targets:**
+- **x86/x86_64**: Intel and AMD processors
+- **ARM**: 32-bit and 64-bit (ARMv7, ARMv8, AArch64)
+- **RISC-V**: RISC-V architecture
+- **WebAssembly**: WASM binary format
+- **MIPS, PowerPC**: Additional architectures
+
+### 11.4 Link-Time Optimization (LTO)
+
+LLVM provides link-time optimization for cross-module optimizations:
+
+```rust
+fn link_with_lto(
+    object_files: &[PathBuf],
+    output: &Path,
+) -> Result<()> {
+    // Create LTO module
+    let lto = llvm::LTO::new()?;
+    
+    // Add object files
+    for obj_file in object_files {
+        lto.add_object_file(obj_file)?;
+    }
+    
+    // Optimize and link
+    lto.optimize()?;
+    lto.write_merged_modules(output)?;
+    
+    Ok(())
+}
+```
+
+**LTO Benefits:**
+- Cross-module inlining
+- Dead code elimination across modules
+- Constant propagation across modules
+- Better optimization opportunities
+
+### 11.5 RUX-Specific LLVM Passes (Optional)
+
+Custom LLVM passes can be added for RUX-specific optimizations:
+
+```rust
+// Component Inlining Pass
+struct ComponentInliningPass;
+
+impl llvm::FunctionPass for ComponentInliningPass {
+    fn run_on_function(&mut self, func: &llvm::Function) -> bool {
+        // Identify small component functions
+        if self.is_small_component(func) {
+            // Inline component calls
+            self.inline_component_calls(func);
+            true
+        } else {
+            false
+        }
+    }
+    
+    fn is_small_component(&self, func: &llvm::Function) -> bool {
+        // Check if function is a small component
+        func.basic_blocks().count() < 10
+    }
+}
+
+// Signal Optimization Pass
+struct SignalOptimizationPass;
+
+impl llvm::FunctionPass for SignalOptimizationPass {
+    fn run_on_function(&mut self, func: &llvm::Function) -> bool {
+        // Optimize signal dependency tracking
+        // Remove redundant signal reads
+        // Optimize signal update propagation
+        self.optimize_signal_accesses(func);
+        true
+    }
+}
+
+// Virtual Tree Optimization Pass
+struct VirtualTreeOptimizationPass;
+
+impl llvm::FunctionPass for VirtualTreeOptimizationPass {
+    fn run_on_function(&mut self, func: &llvm::Function) -> bool {
+        // Optimize virtual tree diffing
+        // Optimize tree traversal
+        // Optimize patch generation
+        self.optimize_tree_operations(func);
+        true
+    }
+}
+```
+
+**Registering Custom Passes:**
+
+```rust
+fn register_rux_passes(pass_registry: &mut llvm::PassRegistry) {
+    pass_registry.register_function_pass(
+        "rux-component-inline",
+        ComponentInliningPass::new,
+    );
+    pass_registry.register_function_pass(
+        "rux-signal-opt",
+        SignalOptimizationPass::new,
+    );
+    pass_registry.register_function_pass(
+        "rux-tree-opt",
+        VirtualTreeOptimizationPass::new,
+    );
+}
+```
+
+### 11.6 LLVM Integration Benefits
+
+**Why LLVM is the Right Choice:**
+
+1. **Proven Technology**
+   - Used by major languages (Rust, Swift, Clang, Julia)
+   - Decades of optimization research
+   - Extensive testing across millions of codebases
+
+2. **Excellent Optimization Quality**
+   - Advanced optimization passes
+   - Profile-guided optimization (PGO)
+   - Link-time optimization (LTO)
+   - Target-specific optimizations
+
+3. **Broad Target Support**
+   - All major platforms and architectures
+   - Cross-platform code generation
+   - Consistent optimization quality
+
+4. **Active Maintenance**
+   - Large community and corporate backing
+   - Regular updates and improvements
+   - Security patches and bug fixes
+
+5. **Practical Development**
+   - Faster time to market
+   - Focus on RUX-specific features
+   - Leverage existing infrastructure
+   - Reduce risk
+
+## 12. Conclusion: Fastest + Universal Support
 
 ### Recommended Approach: Native Rust with WASM Fallback
 
@@ -888,13 +1255,23 @@ jobs:
 ```
 .rsx source
   ↓
-RUX Compiler → Rust code
+RUX Frontend Compiler (built from scratch)
+  ├─ Lexer, Parser, Type Checker
+  ├─ RUX-specific optimizer (component inlining, signal optimization)
+  └─ LLVM IR generator
   ↓
-Rust Compiler → Multiple targets:
+LLVM Backend
+  ├─ LLVM optimization passes
+  ├─ Target code generation
+  └─ Binary output
+  ↓
+Multiple targets:
   ├─ Native binary (desktop/mobile) ← Fastest
   ├─ WASM module (web) ← Near-native
   └─ Static library (platform interop) ← Native UI
 ```
+
+**Hybrid Compiler Architecture**: RUX frontend handles RUX-specific optimizations, LLVM backend handles proven low-level optimizations and code generation. This provides the best balance of control, quality, and practicality.
 
 #### Performance Summary
 

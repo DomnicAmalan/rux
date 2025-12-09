@@ -2,9 +2,13 @@
 
 ## Overview
 
-The RUX compiler transforms `.rsx` files into optimized Rust code. It combines Svelte's compile-time optimizations with Rust's excellent error messages and zero-cost abstractions.
+The RUX compiler transforms `.rsx` files into optimized binaries using a hybrid approach: a custom frontend for RUX-specific optimizations combined with LLVM as the backend for proven, high-quality code generation. This combines Svelte's compile-time optimizations with LLVM's excellent optimization passes and broad target support.
 
-**Related Documentation**: See [Endpoint Compilers](endpoint-compilers.md) for details on compilation targets, performance characteristics, and platform-specific compilation strategies.
+**Related Documentation**: 
+- [Endpoint Compilers](endpoint-compilers.md) - Compilation targets, performance characteristics, and platform-specific compilation strategies
+- [Syntax Analysis](syntax-analysis.md) - Analysis of rendering syntax alternatives and recommendations
+- [SwiftUI Patterns Analysis](swiftui-patterns-analysis.md) - Detailed recommendations on SwiftUI patterns to adopt or avoid
+- [Large Codebase Design](large-codebase-design.md) - Design philosophy for scalability and resource-constrained devices
 
 ## 1. Compiler Pipeline
 
@@ -13,32 +17,52 @@ The RUX compiler transforms `.rsx` files into optimized Rust code. It combines S
 ```
 .rsx file
   ↓
-[Lexer] → Tokens
+[RUX Frontend Compiler - Built from scratch]
+  ├─ Lexer (RUX built)
+  ├─ Parser (RUX built)
+  ├─ Type Checker (RUX built)
+  └─ Analyzer (RUX built)
   ↓
-[Parser] → AST
+[RUX Optimizer - RUX-specific optimizations]
+  ├─ Component inlining
+  ├─ Signal optimization
+  ├─ Virtual tree optimization
+  └─ UI-specific optimizations
   ↓
-[Analyzer] → Typed AST
+[RUX Code Generator - Built from scratch]
   ↓
-[Optimizer] → Optimized AST
+[LLVM IR Generator]
   ↓
-[Codegen] → Rust code
+[LLVM Backend]
+  ├─ LLVM optimization passes
+  ├─ Target code generation
+  └─ Binary output
   ↓
-[Rustc] → Multiple targets:
+Multiple targets:
   ├─ Native binary (desktop/mobile)
   ├─ WASM module (web)
   └─ Static library (platform interop)
 ```
 
-**Note**: The RUX compiler generates Rust code, which is then compiled by `rustc` to various targets. See [Endpoint Compilers](endpoint-compilers.md) for details on each compilation target and their performance characteristics.
+**Compiler Strategy**: RUX uses a hybrid approach combining custom frontend with LLVM backend:
+- **RUX Frontend**: Built from scratch - handles parsing, type checking, and RUX-specific optimizations
+- **LLVM Backend**: Proven, mature code generation with excellent optimization quality
+- **Best of Both Worlds**: RUX-specific optimizations + LLVM's battle-tested code generation
+- **Broad Target Support**: LLVM provides support for all major platforms and architectures
+
+See [Endpoint Compilers](endpoint-compilers.md) for details on each compilation target and their performance characteristics.
 
 ### 1.2 Stage Overview
 
-1. **Lexing**: Convert source to tokens
-2. **Parsing**: Build abstract syntax tree
-3. **Analysis**: Type checking, dependency analysis
-4. **Optimization**: Dead code elimination, inlining
-5. **Code Generation**: Generate Rust code
-6. **Compilation**: Rust compiler produces binary
+1. **Lexing**: Convert source to tokens (RUX built lexer)
+2. **Parsing**: Build abstract syntax tree (RUX built parser)
+3. **Analysis**: Type checking, dependency analysis (RUX built analyzer)
+4. **RUX-Specific Optimization**: Component inlining, signal optimization, virtual tree optimization (RUX built optimizer)
+5. **Code Generation**: Generate LLVM IR from RUX AST (RUX built code generator)
+6. **LLVM Optimization**: LLVM optimization passes (inlining, loop optimization, vectorization, etc.)
+7. **LLVM Code Generation**: Target-specific code generation and binary output (LLVM backend)
+
+**Hybrid Approach**: RUX frontend handles domain-specific optimizations, LLVM backend handles proven low-level optimizations and code generation.
 
 ## 2. Parser for .rsx Syntax
 
@@ -591,9 +615,101 @@ impl Watcher {
 }
 ```
 
-## 12. Endpoint Compilation
+## 12. LLVM Backend Integration
 
-The RUX compiler generates Rust code that can be compiled to multiple targets:
+### 12.1 LLVM IR Generation
+
+The RUX compiler generates LLVM IR (Intermediate Representation) from the optimized RUX AST:
+
+```rust
+struct LLVMIRGenerator {
+    context: llvm::Context,
+    module: llvm::Module,
+    builder: llvm::IRBuilder,
+}
+
+impl LLVMIRGenerator {
+    fn generate(&mut self, ast: &OptimizedAST) -> Result<llvm::Module> {
+        // Generate LLVM IR from RUX AST
+        self.visit_ast(ast);
+        Ok(self.module.clone())
+    }
+    
+    fn generate_function(&mut self, component: &Component) {
+        // Generate LLVM function from component
+        let func_type = self.create_function_type(component);
+        let func = self.module.add_function(component.name, func_type);
+        // ... generate function body
+    }
+}
+```
+
+### 12.2 LLVM Optimization Pipeline
+
+LLVM applies proven optimization passes to the generated IR:
+
+```rust
+fn optimize_with_llvm(module: &mut llvm::Module) -> Result<()> {
+    let pass_manager = llvm::PassManager::new();
+    
+    // Standard optimization passes
+    pass_manager.add_instruction_combining_pass();
+    pass_manager.add_reassociate_pass();
+    pass_manager.add_gvn_pass();
+    pass_manager.add_cfg_simplification_pass();
+    pass_manager.add_dead_store_elimination_pass();
+    
+    // Advanced optimizations
+    pass_manager.add_loop_vectorize_pass();
+    pass_manager.add_slp_vectorize_pass();
+    pass_manager.add_aggressive_dce_pass();
+    
+    // Run optimizations
+    pass_manager.run(module);
+    
+    Ok(())
+}
+```
+
+### 12.3 Target Code Generation
+
+LLVM generates target-specific code for all supported platforms:
+
+- **x86/x86_64**: Intel and AMD processors
+- **ARM**: 32-bit and 64-bit ARM processors
+- **RISC-V**: RISC-V architecture
+- **WebAssembly**: WASM binary format
+- **MIPS, PowerPC**: Additional architectures
+
+### 12.4 RUX-Specific LLVM Passes (Optional)
+
+Custom LLVM passes can be added for RUX-specific optimizations:
+
+```rust
+struct ComponentInliningPass;
+
+impl llvm::FunctionPass for ComponentInliningPass {
+    fn run_on_function(&mut self, func: &llvm::Function) -> bool {
+        // RUX-specific: Inline small components
+        // ... implementation
+        true
+    }
+}
+
+struct SignalOptimizationPass;
+
+impl llvm::FunctionPass for SignalOptimizationPass {
+    fn run_on_function(&mut self, func: &llvm::Function) -> bool {
+        // RUX-specific: Optimize signal dependency tracking
+        // ... implementation
+        true
+    }
+}
+```
+
+## 13. Endpoint Compilation
+
+The RUX compiler uses LLVM to generate code for multiple targets:
 
 - **Native binaries**: Desktop and mobile platforms (fastest performance)
 - **WASM modules**: Web platform (near-native performance)
@@ -601,27 +717,29 @@ The RUX compiler generates Rust code that can be compiled to multiple targets:
 
 For detailed information on compilation targets, performance characteristics, build configurations, and platform-specific integration, see [Endpoint Compilers](endpoint-compilers.md).
 
-### 12.1 Target Selection
+### 13.1 Target Selection
 
 The compilation target is determined by:
-1. Cargo target specification (`--target`)
+1. LLVM target triple specification
 2. Feature flags in `Cargo.toml`
 3. Platform-specific code via `#[cfg(...)]` attributes
 
-### 12.2 Code Generation for Multiple Targets
+### 13.2 Code Generation for Multiple Targets
 
-The code generator produces platform-agnostic Rust code with conditional compilation:
+LLVM handles target-specific code generation automatically:
 
 ```rust
-// Generated code includes platform-specific sections
-#[cfg(target_arch = "wasm32")]
-mod web_impl { /* Web-specific code */ }
+// LLVM automatically generates platform-specific code
+let target_machine = llvm::TargetMachine::new(
+    target_triple,  // e.g., "x86_64-unknown-linux-gnu"
+    cpu,            // e.g., "x86-64"
+    features,       // e.g., "+avx2"
+    opt_level,      // Optimization level
+    reloc_model,    // Relocation model
+    code_model,     // Code model
+)?;
 
-#[cfg(target_os = "android")]
-mod android_impl { /* Android-specific code */ }
-
-#[cfg(target_os = "ios")]
-mod ios_impl { /* iOS-specific code */ }
+target_machine.emit_to_file(module, output_path, FileType::Object)?;
 ```
 
 ## 13. Future Considerations
