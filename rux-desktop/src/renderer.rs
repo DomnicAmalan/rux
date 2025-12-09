@@ -1,7 +1,8 @@
 use rux_core::renderer::{Renderer, ElementId};
-use rux_core::virtual_tree::{VirtualNode, NodeId, Patch};
+use rux_core::virtual_tree::{VirtualNode, NodeId, Patch, NodeType, PropValue};
 use wgpu::*;
 use winit::window::Window;
+use std::collections::HashMap;
 
 pub struct DesktopRenderer {
     surface: Surface<'static>,
@@ -9,6 +10,9 @@ pub struct DesktopRenderer {
     queue: Queue,
     config: SurfaceConfiguration,
     _window: Window,
+    node_to_element: HashMap<NodeId, ElementId>,
+    element_to_node: HashMap<ElementId, NodeId>,
+    next_element_id: usize,
 }
 
 impl DesktopRenderer {
@@ -75,6 +79,9 @@ impl DesktopRenderer {
             queue,
             config,
             _window: window,
+            node_to_element: HashMap::new(),
+            element_to_node: HashMap::new(),
+            next_element_id: 1,
         })
     }
     
@@ -129,29 +136,93 @@ impl DesktopRenderer {
 
 impl Renderer for DesktopRenderer {
     fn create_element(&mut self, node: &VirtualNode) -> ElementId {
-        // Create GPU element from virtual node
-        ElementId(0) // Simplified
+        let element_id = ElementId(self.next_element_id);
+        self.next_element_id += 1;
+        
+        self.node_to_element.insert(node.id, element_id);
+        self.element_to_node.insert(element_id, node.id);
+        
+        element_id
     }
     
     fn update_element(&mut self, element_id: ElementId, patches: &[Patch]) {
-        // Update GPU element based on patches
-        let _ = element_id;
-        let _ = patches;
+        // Apply patches to update GPU rendering
+        // In a full implementation, this would update the GPU command buffer
+        for patch in patches {
+            match patch {
+                Patch::Replace { node_id, new_node: _ } => {
+                    if let Some(&_elem_id) = self.node_to_element.get(node_id) {
+                        // Would recreate GPU resources for new node
+                    }
+                }
+                Patch::UpdateProps { node_id, props: _ } => {
+                    if let Some(&_elem_id) = self.node_to_element.get(node_id) {
+                        // Would update GPU uniforms/properties
+                    }
+                }
+                Patch::Insert { parent_id: _, index: _, node } => {
+                    self.create_element(node);
+                }
+                Patch::Remove { node_id } => {
+                    if let Some(&elem_id) = self.node_to_element.get(node_id) {
+                        self.remove_element(elem_id);
+                    }
+                }
+                Patch::Move { node_id: _, new_parent: _, new_index: _ } => {
+                    // Would reorder GPU draw calls
+                }
+            }
+        }
     }
     
     fn remove_element(&mut self, element_id: ElementId) {
-        // Remove GPU element
-        let _ = element_id;
+        if let Some(node_id) = self.element_to_node.remove(&element_id) {
+            self.node_to_element.remove(&node_id);
+        }
     }
     
     fn mount(&mut self, root: ElementId, node: &VirtualNode) {
         // Mount virtual tree to GPU
-        let _ = root;
-        let _ = node;
+        // In a full implementation, this would create GPU resources and command buffers
+        self.mount_recursive(root, node);
     }
     
     fn unmount(&mut self, root: ElementId) {
         // Unmount virtual tree from GPU
-        let _ = root;
+        self.remove_element(root);
+    }
+}
+
+impl DesktopRenderer {
+    fn mount_recursive(&mut self, parent: ElementId, node: &VirtualNode) {
+        // Create element for this node
+        let element_id = self.create_element(node);
+        
+        // Mount children
+        for child in &node.children {
+            self.mount_recursive(element_id, child);
+        }
+    }
+    
+    fn render_virtual_node(&self, node: &VirtualNode) {
+        // In a full implementation, this would:
+        // 1. Create GPU resources (buffers, textures) based on node type
+        // 2. Set up render pipeline
+        // 3. Record draw commands
+        match &node.node_type {
+            NodeType::Element(tag) => {
+                // Render HTML element as GPU primitive
+                // Would use layout system to determine position/size
+            }
+            NodeType::Text(text) => {
+                // Render text using font rendering
+            }
+            NodeType::Component(_) => {
+                // Render component (recursive)
+            }
+            NodeType::Fragment => {
+                // Render fragment children
+            }
+        }
     }
 }

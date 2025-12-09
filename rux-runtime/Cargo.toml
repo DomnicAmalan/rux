@@ -7,5 +7,6 @@ license.workspace = true
 
 [dependencies]
 rux-core = { path = "../rux-core" }
+rux-compiler = { path = "../rux-compiler" }
 parking_lot = { workspace = true }
 thiserror = { workspace = true }

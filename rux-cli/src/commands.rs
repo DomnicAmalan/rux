@@ -64,28 +64,77 @@ pub struct CheckArgs {
 }
 
 pub fn handle_build(args: BuildArgs) -> anyhow::Result<()> {
+    use crate::build::BuildSystem;
+    
     println!("Building for target: {}", args.target);
     println!("Output directory: {:?}", args.out_dir);
     println!("Release mode: {}", args.release);
     
-    // Compile .rsx files
-    let compiler = rux_compiler::Compiler::new();
-    // Would compile files here
+    let build_system = BuildSystem::new();
     
+    match args.target.as_str() {
+        "web" => build_system.build_web(&args.out_dir, args.release)?,
+        "desktop" => build_system.build_desktop(&args.out_dir, args.release)?,
+        _ => {
+            return Err(anyhow::anyhow!("Unknown target: {}", args.target));
+        }
+    }
+    
+    println!("✅ Build complete!");
     Ok(())
 }
 
-pub fn handle_dev(args: DevArgs) -> anyhow::Result<()> {
+pub async fn handle_dev(args: DevArgs) -> anyhow::Result<()> {
+    use crate::file_watcher::FileWatcher;
+    use crate::dev_server::DevServer;
+    use rux_compiler::IncrementalCompiler;
+    use std::time::Duration;
+    
     println!("Starting development server on port {}", args.port);
     if args.open {
         println!("Opening browser...");
+        // Would open browser here
     }
     
-    // Start file watcher
-    // Start dev server
-    // Compile on changes
+    // Initialize file watcher
+    let mut watcher = FileWatcher::new()?;
+    if std::path::Path::new("src").exists() {
+        watcher.watch_directory(std::path::Path::new("src"))?;
+    }
     
-    Ok(())
+    // Initialize incremental compiler
+    let mut compiler = IncrementalCompiler::new();
+    
+    // Start dev server in background
+    let server = DevServer::new(args.port);
+    let server_port = args.port;
+    tokio::spawn(async move {
+        if let Err(e) = server.start().await {
+            eprintln!("Dev server error: {}", e);
+        }
+    });
+    
+    println!("Watching for file changes...");
+    
+    // Main loop: watch for changes and recompile
+    loop {
+        let changed = watcher.check_for_changes();
+        if !changed.is_empty() {
+            println!("Files changed: {:?}", changed);
+            match compiler.compile_incremental(&changed) {
+                Ok(_) => {
+                    println!("✅ Recompiled successfully");
+                    // Would send WebSocket update to clients
+                }
+                Err(e) => {
+                    eprintln!("❌ Compilation error: {}", e);
+                }
+            }
+        }
+        
+        // Sleep briefly to avoid busy-waiting
+        tokio::time::sleep(Duration::from_millis(100)).await;
+    }
 }
 
 pub fn handle_new(args: NewArgs) -> anyhow::Result<()> {

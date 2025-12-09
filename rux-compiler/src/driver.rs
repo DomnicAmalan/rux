@@ -5,6 +5,7 @@ use crate::parser::Parser;
 use crate::type_checker::TypeChecker;
 use crate::optimizer::Optimizer;
 use crate::analyzer::DependencyAnalyzer;
+use crate::codegen::CodeGenerator;
 use std::path::{Path, PathBuf};
 use std::collections::HashMap;
 
@@ -74,6 +75,12 @@ impl Compiler {
         optimizer.optimize(&mut ast)?;
         
         Ok(ast)
+    }
+    
+    pub fn compile_string_to_rust(&mut self, source: &str, filename: &str) -> Result<String> {
+        let ast = self.compile_string(source, filename)?;
+        let mut codegen = CodeGenerator::new();
+        codegen.generate_rust_code(&ast)
     }
 }
 

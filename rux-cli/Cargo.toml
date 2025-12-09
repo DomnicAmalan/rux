@@ -16,3 +16,7 @@ anyhow = { workspace = true }
 thiserror = { workspace = true }
 walkdir = { workspace = true }
 notify = { workspace = true }
+tokio = { version = "1", features = ["full"] }
+axum = { version = "0.7", features = ["ws"] }
+tower = "0.4"
+tower-http = { version = "0.5", features = ["fs", "cors"] }

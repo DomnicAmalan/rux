@@ -1,6 +1,7 @@
 // Runtime implementation for RUX
 
 pub mod component;
+pub mod executor;
 
 pub use component::{
     ComponentInstance, ComponentId, ComponentState, Hook, StateHook, EffectHook,
