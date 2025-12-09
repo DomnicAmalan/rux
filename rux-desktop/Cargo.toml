@@ -1,0 +1,13 @@
+[package]
+name = "rux-desktop"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+rux-core = { path = "../rux-core" }
+rux-runtime = { path = "../rux-runtime" }
+wgpu = { workspace = true }
+winit = { workspace = true }
+parking_lot = { workspace = true }

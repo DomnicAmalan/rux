@@ -1,0 +1,16 @@
+[package]
+name = "rux-web"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+rux-core = { path = "../rux-core" }
+rux-runtime = { path = "../rux-runtime" }
+wasm-bindgen = { workspace = true }
+web-sys = { workspace = true, features = ["Window", "Document", "Element", "Node", "Text"] }
+parking_lot = { workspace = true }

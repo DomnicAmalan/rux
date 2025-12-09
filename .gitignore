@@ -1,0 +1,69 @@
+# Rust build artifacts
+/target/
+**/*.rs.bk
+*.pdb
+
+# Cargo
+Cargo.lock
+
+# IDE - VSCode
+.vscode/
+*.code-workspace
+
+# IDE - JetBrains
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# IDE - Vim
+*.swp
+*.swo
+*~
+
+# IDE - Emacs
+*~
+\#*\#
+.\#*
+
+# OS - macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# OS - Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# OS - Linux
+*~
+.directory
+.Trash-*
+
+# Debugging
+*.pdb
+*.dSYM/
+
+# LLVM (if building with LLVM)
+*.ll
+*.bc
+
+# Test artifacts
+*.test
+*.profdata
+
+# Documentation builds
+/book/
+/doc/
+
+# Environment variables
+.env
+.env.local
+
+# Temporary files
+*.tmp
+*.temp
+*.log

@@ -1,0 +1,18 @@
+[package]
+name = "rux-cli"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "rux"
+path = "src/main.rs"
+
+[dependencies]
+rux-compiler = { path = "../rux-compiler" }
+clap = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+walkdir = { workspace = true }
+notify = { workspace = true }

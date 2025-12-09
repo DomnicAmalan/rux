@@ -1,0 +1,39 @@
+[workspace]
+members = [
+    "rux-compiler",
+    "rux-core",
+    "rux-runtime",
+    "rux-web",
+    "rux-desktop",
+    "rux-cli",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["RUX Contributors"]
+license = "MIT OR Apache-2.0"
+
+[workspace.dependencies]
+# Compiler dependencies
+inkwell = { version = "0.2", default-features = false, features = ["llvm15-0"] }
+miette = { version = "5.0", features = ["fancy"] }
+walkdir = "2"
+notify = "6"
+
+# Runtime dependencies
+parking_lot = "0.12"
+
+# Web dependencies
+wasm-bindgen = "0.2"
+web-sys = "0.3"
+
+# Desktop dependencies
+wgpu = "0.19"
+winit = "0.29"
+
+# CLI dependencies
+clap = { version = "4", features = ["derive"] }
+anyhow = "1.0"
+thiserror = "2.0"

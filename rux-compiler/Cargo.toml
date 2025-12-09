@@ -1,0 +1,14 @@
+[package]
+name = "rux-compiler"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+# inkwell = { workspace = true }  # Optional - requires LLVM
+miette = { workspace = true }
+walkdir = { workspace = true }
+notify = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
