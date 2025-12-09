@@ -4,6 +4,8 @@
 
 The RUX compiler transforms `.rsx` files into optimized Rust code. It combines Svelte's compile-time optimizations with Rust's excellent error messages and zero-cost abstractions.
 
+**Related Documentation**: See [Endpoint Compilers](endpoint-compilers.md) for details on compilation targets, performance characteristics, and platform-specific compilation strategies.
+
 ## 1. Compiler Pipeline
 
 ### 1.1 Pipeline Stages
@@ -21,8 +23,13 @@ The RUX compiler transforms `.rsx` files into optimized Rust code. It combines S
   ↓
 [Codegen] → Rust code
   ↓
-[Rustc] → Binary
+[Rustc] → Multiple targets:
+  ├─ Native binary (desktop/mobile)
+  ├─ WASM module (web)
+  └─ Static library (platform interop)
 ```
+
+**Note**: The RUX compiler generates Rust code, which is then compiled by `rustc` to various targets. See [Endpoint Compilers](endpoint-compilers.md) for details on each compilation target and their performance characteristics.
 
 ### 1.2 Stage Overview
 
@@ -584,7 +591,40 @@ impl Watcher {
 }
 ```
 
-## 12. Future Considerations
+## 12. Endpoint Compilation
+
+The RUX compiler generates Rust code that can be compiled to multiple targets:
+
+- **Native binaries**: Desktop and mobile platforms (fastest performance)
+- **WASM modules**: Web platform (near-native performance)
+- **Static libraries**: Platform interop (Android JNI, iOS FFI)
+
+For detailed information on compilation targets, performance characteristics, build configurations, and platform-specific integration, see [Endpoint Compilers](endpoint-compilers.md).
+
+### 12.1 Target Selection
+
+The compilation target is determined by:
+1. Cargo target specification (`--target`)
+2. Feature flags in `Cargo.toml`
+3. Platform-specific code via `#[cfg(...)]` attributes
+
+### 12.2 Code Generation for Multiple Targets
+
+The code generator produces platform-agnostic Rust code with conditional compilation:
+
+```rust
+// Generated code includes platform-specific sections
+#[cfg(target_arch = "wasm32")]
+mod web_impl { /* Web-specific code */ }
+
+#[cfg(target_os = "android")]
+mod android_impl { /* Android-specific code */ }
+
+#[cfg(target_os = "ios")]
+mod ios_impl { /* iOS-specific code */ }
+```
+
+## 13. Future Considerations
 
 - Parallel compilation
 - LSP integration for real-time errors

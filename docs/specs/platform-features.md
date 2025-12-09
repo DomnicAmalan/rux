@@ -4,11 +4,21 @@
 
 RUX targets multiple platforms: Web (WASM), Desktop (WGPU), Mobile (iOS/Android), and Embedded systems. Each platform has specific features and optimizations.
 
+**Related Documentation**: See [Endpoint Compilers](endpoint-compilers.md) for comprehensive information on compilation targets, performance characteristics, build configurations, and platform-specific integration strategies.
+
 ## 1. Web Platform
 
 ### 1.1 WASM Compilation
 
-Compiling RUX to WebAssembly for web deployment.
+Compiling RUX to WebAssembly for web deployment. RUX uses native Rust compilation to WASM for near-native performance (~10-20% slower than native) with excellent cross-browser compatibility.
+
+**Performance**: ⭐⭐⭐⭐ (Near-native)
+- Near-native performance (90-95% of native)
+- Fast startup (50-150ms optimized)
+- Small bundle size (50KB-2MB optimized)
+- Works in all modern browsers
+
+For detailed WASM compilation strategy, optimization techniques, and build configuration, see [Endpoint Compilers - WASM Strategy](endpoint-compilers.md#5-wasm-compilation-strategy).
 
 ```rust
 // Cargo.toml
@@ -80,7 +90,25 @@ enhance_component("Counter", Counter);
 
 ## 2. Desktop Platform
 
-### 2.1 WGPU Renderer
+### 2.1 Native Compilation
+
+RUX compiles to native binaries for desktop platforms, providing the fastest performance with zero runtime overhead.
+
+**Performance**: ⭐⭐⭐⭐⭐ (Fastest)
+- Zero runtime overhead
+- Direct hardware access
+- Full CPU instruction set utilization
+- Native system integration
+
+**Supported Targets**:
+- Windows: `x86_64-pc-windows-msvc`
+- macOS (Intel): `x86_64-apple-darwin`
+- macOS (Apple Silicon): `aarch64-apple-darwin`
+- Linux: `x86_64-unknown-linux-gnu`
+
+For detailed native compilation strategy, build configurations, and platform-specific optimizations, see [Endpoint Compilers - Native Strategy](endpoint-compilers.md#6-native-rust-compilation-strategy).
+
+### 2.2 WGPU Renderer
 
 WGPU-based rendering for desktop applications.
 
@@ -189,7 +217,23 @@ Native menu bars.
 
 ## 3. Mobile Platform
 
-### 3.1 Gesture Engine
+### 3.1 Native Compilation and Integration
+
+RUX supports mobile platforms through native compilation with platform-specific integration:
+
+**iOS**: Compile to static library (`.a`) or framework, integrated with Swift/SwiftUI via FFI
+- Target: `aarch64-apple-ios`
+- Performance: ⭐⭐⭐⭐⭐ (Fastest on iOS)
+- Integration: Rust static library + Swift FFI
+
+**Android**: Compile to native library (`.so`), integrated with Kotlin/Jetpack Compose via JNI
+- Targets: `aarch64-linux-android`, `armv7-linux-androideabi`
+- Performance: ⭐⭐⭐⭐ (Fast)
+- Integration: Rust native library + JNI bindings
+
+For detailed mobile integration strategies, JNI/FFI examples, and build configurations, see [Endpoint Compilers - Platform Integration](endpoint-compilers.md#7-platform-specific-integration).
+
+### 3.2 Gesture Engine
 
 Comprehensive gesture recognition.
 
@@ -424,12 +468,21 @@ impl PlatformFileSystem for MobileFileSystem { /* ... */ }
 
 ## 7. Build Targets
 
+RUX supports compilation to multiple targets. For comprehensive build configuration examples, optimization strategies, and platform-specific integration guides, see [Endpoint Compilers](endpoint-compilers.md).
+
 ### 7.1 Web Build
 
 ```bash
+# Compile to WASM
 cargo build --target wasm32-unknown-unknown --release
+
+# Generate bindings and optimize
 wasm-pack build --target web
+wasm-opt pkg/rux_app_bg.wasm -O3 -o pkg/rux_app_bg_optimized.wasm
 ```
+
+**Performance**: ⭐⭐⭐⭐ (Near-native, ~10-20% slower than native)
+**Bundle Size**: 50KB-2MB (optimized)
 
 ### 7.2 Desktop Build
 
@@ -437,12 +490,17 @@ wasm-pack build --target web
 # Windows
 cargo build --target x86_64-pc-windows-msvc --release
 
-# macOS
+# macOS (Intel)
 cargo build --target x86_64-apple-darwin --release
+
+# macOS (Apple Silicon)
+cargo build --target aarch64-apple-darwin --release
 
 # Linux
 cargo build --target x86_64-unknown-linux-gnu --release
 ```
+
+**Performance**: ⭐⭐⭐⭐⭐ (Fastest, zero overhead)
 
 ### 7.3 Mobile Build
 
@@ -450,9 +508,18 @@ cargo build --target x86_64-unknown-linux-gnu --release
 # iOS
 cargo build --target aarch64-apple-ios --release
 
-# Android
+# Android (ARM64)
 cargo build --target aarch64-linux-android --release
+
+# Android (ARMv7)
+cargo build --target armv7-linux-androideabi --release
 ```
+
+**Performance**: 
+- iOS: ⭐⭐⭐⭐⭐ (Fastest)
+- Android: ⭐⭐⭐⭐ (Fast)
+
+**Integration**: See [Endpoint Compilers - Platform Integration](endpoint-compilers.md#7-platform-specific-integration) for JNI and FFI integration examples.
 
 ### 7.4 Embedded Build
 
@@ -460,7 +527,25 @@ cargo build --target aarch64-linux-android --release
 cargo build --target thumbv7em-none-eabihf --release --no-default-features
 ```
 
-## 8. Future Considerations
+**Performance**: Optimized for low memory and power consumption
+
+## 8. Compilation Strategy Summary
+
+RUX uses a **universal binary approach** with native Rust compilation as the primary strategy:
+
+1. **Primary**: Native Rust compilation for fastest performance on all platforms
+2. **Secondary**: WASM compilation for web deployment (near-native performance)
+3. **Platform Interop**: Native libraries for integration with platform-specific UI frameworks
+
+**Key Benefits**:
+- ⭐⭐⭐⭐⭐ Performance: Native Rust provides fastest execution
+- Universal Support: All platforms via native binaries, WASM, and platform interop
+- Single Codebase: 95%+ code sharing across platforms
+- Zero Overhead: No runtime virtual machine or interpreter
+
+For detailed performance comparisons, build configurations, and integration examples, see [Endpoint Compilers](endpoint-compilers.md).
+
+## 9. Future Considerations
 
 - VR/AR platform support
 - Cloud rendering
